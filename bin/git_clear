@@ -1,0 +1,36 @@
+#!/bin/bash
+#------------------------------------------------------------------------------
+# Discard all changes with `git reset --hard HEAD`.
+#------------------------------------------------------------------------------
+
+scriptdir="$(dirname $0)"
+scriptname="$(basename $0)"
+
+usage () {
+    cat <<USAGE
+Usage:  ${scriptname} [-h]
+USAGE
+}
+
+while getopts "h" optionName; do
+    case "${optionName}" in
+        h)  usage; exit 0;;
+        \?) usage; exit 3
+    esac
+done
+shift $(($OPTIND-1))
+
+[[ $# == 0 ]] || { usage; exit 21; }
+
+changes=$(git status --short)
+
+if [[ -z ${changes} ]]; then
+    printf "No changes to clear.\n"
+else
+    echo "${changes}"
+    read -n 1 -p "Discard? >" response
+    case ${response} in
+        [yY]) git reset --hard HEAD;;
+    esac
+    echo
+fi
