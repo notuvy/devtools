@@ -13,6 +13,7 @@ doClipboard=false
 doDelete=false
 doExecuteCommit=false
 doAddAll=false
+doPush=false
 commit_msg=""
 
 if [[ -d ${HOME}/var ]]; then srcroot="${HOME}/var"; else srcroot=/var/tmp; fi
@@ -24,7 +25,7 @@ Save/show the text to be used as a commit message to a file (${srcfile}).
 Return the text if the file exists.
 If it does not, either ask for input or exit with an error.
 
-Usage:  ${scriptname} [-h] [-S | -M "msg" | -v | -D | -C] [-d] [-P] [-X] [-a]
+Usage:  ${scriptname} [-h] [-S | -M "msg" | -v | -D | -C] [-d] [-P] [-X] [-a] [-p]
 
   -S      Query for (one line) text to save as the commit message.
   -M msg  Set the given (quoted) message text.
@@ -35,10 +36,24 @@ Usage:  ${scriptname} [-h] [-S | -M "msg" | -v | -D | -C] [-d] [-P] [-X] [-a]
   -P      Just print the full path of the file.
   -X      Perform the commit using the commit message.
   -a      Do 'git add .' before commit.
+  -p      Do 'git push' after commit.
 USAGE
 }
 
-while getopts "hqSM:vdCDPXa" optionName; do
+pushAfterCommit() {
+    if ${doPush}; then
+        ${metacmd} git push
+    elif [[ -z ${metacmd} ]]; then
+        read -n 1 -p "Do 'git push'? [y/N] >" response; echo
+        if [[ ${response} =~ ^[yY] ]]; then
+            ${metacmd} git push
+        else
+            printf "Not pushed.\n"
+        fi
+    fi
+}
+
+while getopts "hqSM:vdCDPXap" optionName; do
     case "${optionName}" in
         h)  usage; exit 0;;
         q)  metacmd=echo;;
@@ -51,6 +66,7 @@ while getopts "hqSM:vdCDPXa" optionName; do
         P)  echo "${srcfile}" | pbcopy; pbpaste; exit 0;;
         X)  doExecuteCommit=true;;
         a)  doAddAll=true;;
+        p)  doPush=true;;
         \?) usage; exit 3
     esac
 done
@@ -94,6 +110,13 @@ elif ${doExecuteCommit}; then
         [[ ${response} =~ ^[yY] ]] || { printf "Aborted.\n"; exit 0; }
     fi
     ${metacmd} git commit -F "${srcfile}"
+    pushAfterCommit
+elif ${doAddAll}; then
+    printf "Must have '-X' to do '-a'.\n"
+    exit 24
+elif ${doPush}; then
+    printf "Must have '-X' to do '-p'.\n"
+    exit 25
 elif [[ -f ${srcfile} ]]; then
     ${metacmd} cat "${srcfile}"
 else
