@@ -10,6 +10,9 @@ doDiff=false
 doExecuteCommit=false
 doAddAll=false
 doPush="" # undefined
+currentBranch=$(git branch --show-current | tr -d '\n')
+gitRootDir="$(git rev-parse --show-toplevel)"
+configFile="${gitRootDir}/.git/refBranch"
 
 if [[ -d ${HOME}/var ]]; then srcroot="${HOME}/var"; else srcroot=/var/tmp; fi
 srcfile="${srcroot}/git_commit_msg.txt"
@@ -66,6 +69,11 @@ done
 shift $(($OPTIND-1))
 
 if ! [[ $# == 0 ]]; then printf "Extra args [%s].\n\n" "$*"; usage; exit 21; fi
+
+printf "Current branch: %s\n" "${currentBranch}"
+if [[ -f ${configFile} ]]; then
+    printf "Reference :     %s\n" "$(cat ${configFile})"
+fi
 
 ${doAddAll} && ${metacmd} git add .
 ${metacmd} git status --short
