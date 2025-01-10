@@ -7,6 +7,7 @@ scriptdir="$(dirname $0)"
 scriptname="$(basename $0)"
 metacmd=""
 doDiff=false
+diffArgs=""
 doExecuteCommit=false
 doAddAll=false
 doPush="" # undefined
@@ -25,10 +26,11 @@ Automate some of the standard development workflow with git.  This involves:
   3. Commit files (with a message)
   4. Push the commits
 
-Usage:  ${scriptname} [-h] [-a] [-d] [-m | -M "msg"] [-X] [-p | -P]
+Usage:  ${scriptname} [-h] [-a] [-d | -D] [-m | -M "msg"] [-X] [-p | -P]
 
   -a      Do 'git add .' before commit.
-  -d      Show the diff before editing.
+  -d      Show the diff of staged changes.
+  -D      Show the diff of unstaged changes.
   -m      Commit with the predefined message (via git_commit_msg.sh).
   -M msg  Commit with the given (quoted) message text.
   -p      Do 'git push' after commit.
@@ -53,12 +55,13 @@ pushAfterCommit() {
     fi
 }
 
-while getopts "hadmM:pP" optionName; do
+while getopts "hadDmM:pP" optionName; do
     case "${optionName}" in
         h)  usage; exit 0;;
         q)  metacmd=echo;;
         a)  doAddAll=true;;
-        d)  doDiff=true;;
+        d)  doDiff=true; diffArgs="--staged";;
+        D)  doDiff=true;;
         m)  doExecuteCommit=true;;
         M)  doExecuteCommit=true; git_commit_msg.sh -M "${OPTARG}";;
         p)  doPush=true;;
@@ -77,7 +80,7 @@ fi
 
 ${doAddAll} && ${metacmd} git add .
 ${metacmd} git status --short
-${doDiff} && ${metacmd} git diff --staged
+${doDiff} && ${metacmd} git diff ${diffArgs}
 
 if ${doExecuteCommit}; then
     if ! [[ ${metacmd} == echo ]]; then
