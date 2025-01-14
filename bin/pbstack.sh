@@ -49,7 +49,8 @@ case $1 in
         ;;
     po*)
         getStashContent
-        cat ${stashfile} | pbcopy
+        echo "${stashContent}" | pbcopy
+        rm ${stashfile}
         printf "Unstashed.\n"
         ;;
     sw*)
