@@ -3,12 +3,33 @@
 # Generate and copy multiple UUID strings.
 #------------------------------------------------------------------------------
 
+scriptdir="$(dirname $0)"
+scriptname="$(basename $0)"
+metacmd=""
+count="0"
+limit=""
+multiresult=""
+
 usage () {
     scriptname="$(basename $0)"
     cat <<USAGE
-Usage:  ${scriptname} [-h]
+Generate a random UUID.  Multiple can be consecutively created interactively.
+
+Usage:  ${scriptname} [-h] [-n number]
+
+  -n number   Create a set number of IDs.
 USAGE
 }
+
+while getopts "hqn:" optionName; do
+    case "${optionName}" in
+        h)  usage; exit 0;;
+        q)  metacmd=echo;;
+        n)  limit="${OPTARG}";;
+        \?) usage; exit 3
+    esac
+done
+shift $(($OPTIND-1))
 
 [[ $# == 1 && $1 == -h ]] && { usage; exit 0; }
 [[ $# == 0 ]] || { usage; exit 11; }
@@ -16,11 +37,18 @@ USAGE
 continuing=true
 while ${continuing}; do
     id=$(uuidgen | tr [A-Z] [a-z] | tr -d '\n')
-    echo -n ${id} | pbcopy
-    printf "\n%s\n" ${id}
+    count=$((count+1))
 
-    continuing=false
-    read -n 1 -p "Another? [Y/n] >" response; echo
-    [[ -z ${response} || ${response} =~ ^[yY] ]] && continuing=true
+    if [[ -z ${limit} ]]; then
+        printf "\n%s\n" ${id}
+        continuing=false
+        read -n 1 -p "Another? [Y/n] >" response; echo
+        [[ -z ${response} || ${response} =~ ^[yY] ]] && continuing=true
+    else
+        [[ -n ${multiresult} ]] && multiresult+=$'\n'
+        multiresult+=${id}
+        [[ ${count} -ge ${limit} ]] && continuing=false
+    fi
 done
 
+[[ -n ${multiresult} ]] && echo "${multiresult}"
