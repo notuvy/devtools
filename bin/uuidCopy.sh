@@ -6,6 +6,7 @@
 scriptdir="$(dirname $0)"
 scriptname="$(basename $0)"
 metacmd=""
+jsonVar=""
 count="0"
 limit=""
 multiresult=""
@@ -15,17 +16,19 @@ usage () {
     cat <<USAGE
 Generate a random UUID.  Multiple can be consecutively created interactively.
 
-Usage:  ${scriptname} [-h] [-n number]
+Usage:  ${scriptname} [-h] [-n number] [-j var]
 
   -n number   Create a set number of IDs.
+  -j var      Format as a JSON variable with the given name
 USAGE
 }
 
-while getopts "hqn:" optionName; do
+while getopts "hqn:j:" optionName; do
     case "${optionName}" in
         h)  usage; exit 0;;
         q)  metacmd=echo;;
         n)  limit="${OPTARG}";;
+        j)  jsonVar="${OPTARG}";;
         \?) usage; exit 3
     esac
 done
@@ -37,10 +40,15 @@ shift $(($OPTIND-1))
 continuing=true
 while ${continuing}; do
     id=$(uuidgen | tr [A-Z] [a-z] | tr -d '\n')
+    if [[ -n ${jsonVar} ]]; then
+        id="${jsonVar}: \"$id\","
+    fi
     count=$((count+1))
 
     if [[ -z ${limit} ]]; then
-        printf "\n%s\n" ${id}
+        printf "\n"
+        echo "${id}" | pbcopy
+        pbpaste
         continuing=false
         read -n 1 -p "Another? [Y/n] >" response; echo
         [[ -z ${response} || ${response} =~ ^[yY] ]] && continuing=true
@@ -51,4 +59,7 @@ while ${continuing}; do
     fi
 done
 
-[[ -n ${multiresult} ]] && echo "${multiresult}"
+if [[ -n ${multiresult} ]]; then
+    echo "${multiresult}" | pbcopy
+    pbpaste
+fi
