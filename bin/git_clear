@@ -5,16 +5,20 @@
 
 scriptdir="$(dirname $0)"
 scriptname="$(basename $0)"
+doDiff=false
 
 usage () {
     cat <<USAGE
+Discard all the changes (staged and unstaged).
+
 Usage:  ${scriptname} [-h]
 USAGE
 }
 
-while getopts "h" optionName; do
+while getopts "hd" optionName; do
     case "${optionName}" in
         h)  usage; exit 0;;
+        d)  doDiff=true;;
         \?) usage; exit 3
     esac
 done
@@ -27,6 +31,14 @@ changes=$(git status --short)
 if [[ -z ${changes} ]]; then
     printf "No changes to clear.\n"
 else
+    if ${doDiff}; then
+        echo "Unstaged:"
+        git diff
+        echo "Staged:"
+        git diff --staged
+        echo
+    fi
+
     echo "${changes}"
     read -n 1 -p "Discard? >" response
     case ${response} in
