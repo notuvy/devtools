@@ -15,6 +15,7 @@ currentBranch=$(git branch --show-current | tr -d '\n')
 gitRootDir="$(git rev-parse --show-toplevel)"
 configFile="${gitRootDir}/.git/refBranch"
 onRefBranch=false
+restrictRefBranch=true
 
 if [[ -d ${HOME}/var ]]; then srcroot="${HOME}/var"; else srcroot=/var/tmp; fi
 srcfile="${srcroot}/git_commit_msg.txt"
@@ -27,13 +28,14 @@ Automate some of the standard development workflow with git.  This involves:
   3. Commit files (with a message)
   4. Push the commits
 
-Usage:  ${scriptname} [-h] [-a] [-d | -D] [-m | -M "msg"] [-X] [-p | -P]
+Usage:  ${scriptname} [-h] [-a] [-d | -D] [-m | -M "msg"] [-X] [-R] [-p | -P]
 
   -a      Do 'git add .' before commit.
   -d      Show the diff of staged changes.
   -D      Show the diff of unstaged changes.
   -m      Commit with the predefined message (via git_commit_msg.sh).
   -M msg  Commit with the given (quoted) message text.
+  -R      Skip the reference branch commit restriction.
   -p      Do 'git push' after commit.
   -P      Do NOT 'git push' after commit.
 USAGE
@@ -56,7 +58,7 @@ pushAfterCommit() {
     fi
 }
 
-while getopts "hadDmM:pP" optionName; do
+while getopts "hadDmM:RpP" optionName; do
     case "${optionName}" in
         h)  usage; exit 0;;
         q)  metacmd=echo;;
@@ -65,6 +67,7 @@ while getopts "hadDmM:pP" optionName; do
         D)  doDiff=true;;
         m)  doExecuteCommit=true;;
         M)  doExecuteCommit=true; git_commit_msg.sh -M "${OPTARG}";;
+        R)  restrictRefBranch=false;;
         p)  doPush=true;;
         P)  doPush=false;;
         \?) usage; exit 3
@@ -86,7 +89,7 @@ ${metacmd} git status --short
 ${doDiff} && ${metacmd} git diff ${diffArgs}
 
 if ${doExecuteCommit}; then
-    if ${onRefBranch}; then
+    if ${onRefBranch} && ${restrictRefBranch}; then
         printf "ERROR: Cannot commit changes directly to the reference branch.\n"
         exit 31
     fi
