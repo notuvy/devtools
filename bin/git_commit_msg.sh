@@ -44,7 +44,7 @@ while getopts "hqSM:vdCDP" optionName; do
         d)  doDiff=true;;
         C)  doClipboard=true;;
         D)  doDelete=true;;
-        P)  echo "${srcfile}" | pbcopy; pbpaste; exit 0;;
+        P)  echo "${srcfile}"; exit 0;;
         \?) usage; exit 3
     esac
 done
