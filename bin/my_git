@@ -42,19 +42,16 @@ USAGE
 }
 
 pushAfterCommit() {
-    if [[ -z ${doPush} ]] && [[ -z ${metacmd} ]]; then
-        read -n 1 -p "Do 'git push'? [y/N] >" response; echo
-        if [[ ${response} =~ ^[yY] ]]; then
-            doPush=true
-        else
-            doPush=false
-        fi
-    fi
-
-    if ${doPush}; then
-        ${metacmd} git push
+    upstream="$(git rev-parse --abbrev-ref @{u} 2> /dev/null)"
+    if [[ -z ${upstream} ]]; then
+        printf "No upstream is set, so push is ignored.\n"
     else
-        printf "No push.\n"
+        if [[ -z ${doPush} ]] && [[ -z ${metacmd} ]]; then
+            read -n 1 -p "Do 'git push' to [${upstream}]? [y/N] >" resp; echo
+            if [[ ${resp} =~ ^[yY] ]]; then doPush=true; else doPush=false; fi
+        fi
+
+        if ${doPush}; then ${metacmd} git push; else printf "No push.\n"; fi
     fi
 }
 
@@ -98,8 +95,8 @@ if ${doExecuteCommit}; then
         printf "Commit message:\n"
         git_commit_msg.sh
         echo
-        read -n 1 -p "Continue with commit? [y/N] >" response; echo
-        [[ ${response} =~ ^[yY] ]] || { printf "Aborted.\n"; exit 0; }
+        read -n 1 -p "Continue with commit? [y/N] >" resp; echo
+        [[ ${resp} =~ ^[yY] ]] || { printf "Aborted.\n"; exit 0; }
     fi
     ${metacmd} git commit -F "$(git_commit_msg.sh -P)"
     pushAfterCommit
