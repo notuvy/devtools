@@ -16,6 +16,7 @@ gitRootDir="$(git rev-parse --show-toplevel)"
 configFile="${gitRootDir}/.git/refBranch"
 onRefBranch=false
 restrictRefBranch=true
+upstream=""
 
 if [[ -d ${HOME}/var ]]; then srcroot="${HOME}/var"; else srcroot=/var/tmp; fi
 srcfile="${srcroot}/git_commit_msg.txt"
@@ -44,10 +45,15 @@ USAGE
 pushAfterCommit() {
     upstream="$(git rev-parse --abbrev-ref @{u} 2> /dev/null)"
     if [[ -z ${upstream} ]]; then
-        printf "No upstream is set, so push is ignored.\n"
+        prompt="Set upstream to [origin/${currentBranch}] and do 'git push'? [y/N] >"
+        read -n 1 -p "${prompt}" resp; echo
+        if [[ ${resp} =~ ^[yY] ]]; then
+            ${metacmd} git push --set-upstream origin "${currentBranch}"
+        fi
     else
         if [[ -z ${doPush} ]] && [[ -z ${metacmd} ]]; then
-            read -n 1 -p "Do 'git push' to [${upstream}]? [y/N] >" resp; echo
+            prompt="Do 'git push' to [${upstream}]? [y/N] >"
+            read -n 1 -p "${prompt}" resp; echo
             if [[ ${resp} =~ ^[yY] ]]; then doPush=true; else doPush=false; fi
         fi
 
@@ -55,7 +61,7 @@ pushAfterCommit() {
     fi
 }
 
-while getopts "hadDmM:RpP" optionName; do
+while getopts "hqadDmM:RpP" optionName; do
     case "${optionName}" in
         h)  usage; exit 0;;
         q)  metacmd=echo;;
@@ -99,5 +105,7 @@ if ${doExecuteCommit}; then
         [[ ${resp} =~ ^[yY] ]] || { printf "Aborted.\n"; exit 0; }
     fi
     ${metacmd} git commit -F "$(git_commit_msg.sh -P)"
+    pushAfterCommit
+elif [[ ${doPush} == true ]]; then
     pushAfterCommit
 fi
