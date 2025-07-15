@@ -89,7 +89,13 @@ fi
 
 ${doAddAll} && ${metacmd} git add .
 ${metacmd} git status --short
-${doDiff} && ${metacmd} git diff ${diffArgs}
+if ${doDiff}; then
+    if [[ -z ${metacmd} ]]; then
+        # avoid losing information from diff scrolling
+        read -n 1 -p "Press any key for diff. >" resp; echo
+    fi
+    ${metacmd} git diff ${diffArgs}
+fi
 
 if ${doExecuteCommit}; then
     if ${onRefBranch} && ${restrictRefBranch}; then
