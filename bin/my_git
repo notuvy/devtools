@@ -87,7 +87,15 @@ if [[ -f ${configFile} ]]; then
     [[ ${currentBranch} == ${refBranchName} ]] && onRefBranch=true
 fi
 
-${doAddAll} && ${metacmd} git add .
+if ${doAddAll}; then
+    if [[ -z ${metacmd} ]]; then
+        ${metacmd} git add --dry-run .
+        read -n 1 -p "Continue with add? [y/N] >" resp; echo
+        [[ ${resp} =~ ^[yY] ]] || { printf "Aborted.\n"; exit 0; }
+    fi
+    ${metacmd} git add .
+fi
+
 ${metacmd} git status --short
 if ${doDiff}; then
     if [[ -z ${metacmd} ]]; then
