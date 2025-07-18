@@ -6,6 +6,7 @@
 scriptdir="$(dirname $0)"
 scriptname="$(basename $0)"
 metacmd=""
+confirmation=false
 doDiff=false
 diffArgs=""
 doExecuteCommit=false
@@ -42,19 +43,24 @@ Usage:  ${scriptname} [-h] [-a] [-d | -D] [-m | -M "msg"] [-X] [-R] [-p | -P]
 USAGE
 }
 
+getUserResponse() {
+    confirmation=false
+    prompt="$*"
+    read -n 1 -p "${prompt}? [y/N] >" resp; echo
+    [[ ${resp} =~ ^[yY] ]] && confirmation=true
+}
+
 pushAfterCommit() {
     upstream="$(git rev-parse --abbrev-ref @{u} 2> /dev/null)"
     if [[ -z ${upstream} ]]; then
-        prompt="Set upstream to [origin/${currentBranch}] and do 'git push'? [y/N] >"
-        read -n 1 -p "${prompt}" resp; echo
-        if [[ ${resp} =~ ^[yY] ]]; then
+        getUserResponse "Set upstream to [origin/${currentBranch}] and do 'git push'"
+        if ${confirmation}; then
             ${metacmd} git push --set-upstream origin "${currentBranch}"
         fi
     else
         if [[ -z ${doPush} ]] && [[ -z ${metacmd} ]]; then
-            prompt="Do 'git push' to [${upstream}]? [y/N] >"
-            read -n 1 -p "${prompt}" resp; echo
-            if [[ ${resp} =~ ^[yY] ]]; then doPush=true; else doPush=false; fi
+            getUserResponse "Do 'git push' to [${upstream}]? [y/N] >"
+            doPush=${confirmation}
         fi
 
         if ${doPush}; then ${metacmd} git push; else printf "No push.\n"; fi
@@ -90,8 +96,8 @@ fi
 if ${doAddAll}; then
     if [[ -z ${metacmd} ]]; then
         ${metacmd} git add --dry-run .
-        read -n 1 -p "Continue with add? [y/N] >" resp; echo
-        [[ ${resp} =~ ^[yY] ]] || { printf "Aborted.\n"; exit 0; }
+        getUserResponse "Continue with add"
+        ${confirmation} || { printf "Aborted.\n"; exit 0; }
     fi
     ${metacmd} git add .
 fi
@@ -115,8 +121,8 @@ if ${doExecuteCommit}; then
         printf "Commit message:\n"
         git_commit_msg.sh
         echo
-        read -n 1 -p "Continue with commit? [y/N] >" resp; echo
-        [[ ${resp} =~ ^[yY] ]] || { printf "Aborted.\n"; exit 0; }
+        getUserResponse "Continue with commit"
+        ${confirmation} || { printf "Aborted.\n"; exit 0; }
     fi
     ${metacmd} git commit -F "$(git_commit_msg.sh -P)"
     pushAfterCommit

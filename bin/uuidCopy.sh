@@ -10,6 +10,14 @@ jsonVar=""
 count="0"
 limit=""
 multiresult=""
+confirmation=false
+
+getUserResponse() {
+    confirmation=false
+    prompt="$*"
+    read -n 1 -p "${prompt}? [y/N] >" resp; echo
+    [[ ${resp} =~ ^[yY] ]] && confirmation=true
+}
 
 usage () {
     scriptname="$(basename $0)"
@@ -49,9 +57,7 @@ while ${continuing}; do
         printf "\n"
         echo "${id}" | pbcopy
         pbpaste
-        continuing=false
-        read -n 1 -p "Another? [Y/n] >" response; echo
-        [[ -z ${response} || ${response} =~ ^[yY] ]] && continuing=true
+        getUserResponse "Another"; continuing=${confirmation}
     else
         [[ -n ${multiresult} ]] && multiresult+=$'\n'
         multiresult+=${id}
